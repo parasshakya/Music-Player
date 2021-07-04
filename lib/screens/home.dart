@@ -2,6 +2,8 @@ import 'package:assets_audio_player/assets_audio_player.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
 
 class Home extends StatefulWidget {
   @override
@@ -40,10 +42,16 @@ class _HomeState extends State<Home> {
       },
     );
   }
+  String getTimeString(int seconds) {
+    String minuteString =
+        '${(seconds / 60).floor() < 10 ? 0 : ''}${(seconds / 60).floor()}';
+    String secondString = '${seconds % 60 < 10 ? 0 : ''}${seconds % 60}';
+    return '$minuteString:$secondString'; // Returns a string with the format mm:ss
+  }
 
   Widget buildList(BuildContext context, DocumentSnapshot documentSnapshot) {
+    // DateFormat time = DateFormat.ms();
     final player = AssetsAudioPlayer.withId('${documentSnapshot.id}');
-    double _value = 0;
     Map<String, dynamic> data = documentSnapshot.data() as Map<String,dynamic>;
     player.open(
       Audio.network(data['song_url']),autoStart: false,   );
@@ -75,19 +83,31 @@ class _HomeState extends State<Home> {
                     style: Theme.of(context).textTheme.caption!.copyWith(fontSize: 10.0),
                   ),
                   Divider(),
-                    player.builderRealtimePlayingInfos(builder: (context,infos){
-                      if(infos== null){
-                        return SizedBox();
-                      }
-                      return Slider(
-                        value: infos.currentPosition.inSeconds.toDouble(),
-                        max: infos.duration.inSeconds.toDouble(),
-                        min: 0,
-                        onChanged: (value) async {
-                         await player.seek(Duration(seconds: value.toInt()));
-                        },
-                        activeColor: Colors.red,
-                        inactiveColor: Colors.black26,
+                    player.builderRealtimePlayingInfos(builder: (context,realTimePlayingInfo){
+                      return Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                             getTimeString(realTimePlayingInfo.currentPosition.inSeconds)
+                          ),
+                          Slider(
+                            value: realTimePlayingInfo.currentPosition.inSeconds.toDouble(),
+                            max: realTimePlayingInfo.duration.inSeconds.toDouble(),
+                            min: 0,
+                            onChanged: (value) async {
+                             await player.seek(Duration(seconds: value.toInt()));
+                            },
+                            activeColor: Colors.red,
+                            inactiveColor: Colors.black26,
+                          ),
+                          // Flexible(
+                          //   child: Text(
+                          //      ' ${realTimePlayingInfo.duration.inMinutes}:${realTimePlayingInfo.duration.inSeconds}',
+                          //   overflow: TextOverflow.ellipsis,
+                          //   maxLines: 3,),
+                          // ),
+                        ],
                       );
 
                     }),
